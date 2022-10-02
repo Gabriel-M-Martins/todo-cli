@@ -1,4 +1,4 @@
-use std::f32::consts::E;
+use std::{f32::consts::E, io::Error};
 
 use clap::Parser;
 use commands::Commands;
@@ -19,14 +19,20 @@ fn main() {
             match tsk.save(false) {
                 Ok(_) => {
                     println!("{} foi salva.\n", tsk.name);
-                    println!("{}", tsk)
+                    println!("{}", &tsk)
                 }
-                Err(e) => println!("{}", e.to_string()),
+                Err(e) => display_error(e),
             }
         }
         Commands::Edit(t) => {}
         Commands::Delete(t) => {}
-        Commands::Toggle(t) => {}
+        Commands::Toggle(t) => match Task::toggle(&t.name) {
+            Ok(task) => {
+                println!("Alternado o status da tarefa {}\n", &task.name);
+                println!("{}", &task)
+            }
+            Err(e) => display_error(e),
+        },
         Commands::Find(t) => {}
         Commands::List => {
             let tasks_opt = Task::list();
@@ -42,4 +48,8 @@ fn main() {
             }
         }
     }
+}
+
+fn display_error(e: Error) {
+    println!("{}", e.to_string())
 }

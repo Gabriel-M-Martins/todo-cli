@@ -60,8 +60,21 @@ impl Task {
         todo!()
     }
 
-    pub fn toggle(name: &str) -> Result<(), Error> {
-        todo!()
+    pub fn toggle(name: &str) -> Result<Task, Error> {
+        match Task::find(name) {
+            Some(mut task) => {
+                if !task.completed {
+                    task.completed = true;
+                    task.completed_at = Some(Local::now())
+                } else {
+                    task.completed = false;
+                }
+
+                return Ok(task);
+            }
+
+            None => return Err(Error::new(ErrorKind::NotFound, "Task not found.")),
+        }
     }
 
     pub fn find(name: &str) -> Option<Task> {
