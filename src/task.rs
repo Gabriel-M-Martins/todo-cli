@@ -1,8 +1,9 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::{self, File},
-    io::{Error, ErrorKind, Read},
+    fmt,
+    fs::{self, DirEntry, File},
+    io::{Error, ErrorKind},
     path::PathBuf,
 };
 
@@ -39,30 +40,52 @@ impl Task {
     }
 
     pub fn find(name: &str) -> Option<Task> {
-        if let Ok(entries) = fs::read_dir(PATH_SAVE) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if let Ok(f_type) = entry.file_type() {
-                        if f_type.is_file() {
-                            match read_encoded_file(entry.path()) {
-                                Ok(tsk) => return Some(tsk),
-                                Err(_) => return None,
-                            }
-                        }
-                    }
+        let mut task: Option<Task> = None;
+        search_dir(|entry| {
+            if entry.file_name().to_str().unwrap() == name {
+                match read_encoded_file(entry.path()) {
+                    Ok(tsk) => task = Some(tsk),
+                    Err(_) => {}
                 }
             }
-        }
+        });
 
         None
     }
 
-    pub fn list() -> Vec<String> {
+    pub fn list() -> Result<Vec<String>, Error> {
+        let vec: Vec<String> = vec![];
+        if let Ok(entries) = fs::read_dir(PATH_SAVE) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if let Ok(f_type) = entry.file_type() {
+                        if f_type.is_file() {}
+                    }
+                }
+            }
+        }
         todo!()
     }
 
-    pub fn save(&self) -> Result<(), Error> {
-        save_encoded_file(&self)
+    pub fn save(&self, overwrite: bool) -> Result<(), Error> {
+        save_encoded_file(&self, overwrite)
+    }
+}
+
+fn search_dir<F>(mut f: F)
+where
+    F: FnMut(DirEntry),
+{
+    if let Ok(entries) = fs::read_dir(PATH_SAVE) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                if let Ok(f_type) = entry.file_type() {
+                    if f_type.is_file() {
+                        f(entry)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -77,15 +100,29 @@ fn read_encoded_file(path: PathBuf) -> Result<Task, Error> {
     }
 }
 
-fn save_encoded_file(task: &Task) -> Result<(), Error> {
+fn save_encoded_file(task: &Task, overwrite: bool) -> Result<(), Error> {
     let path = format!("{}{}.tsk", PATH_SAVE, task.name);
     let file = bincode::serialize(&task);
 
-    match file {
-        Ok(t) => match File::create(path) {
-            Ok(_) => return Ok(()),
-            Err(e) => Err(e),
-        },
-        Err(e) => return Err(Error::new(ErrorKind::Other, e)),
+    let mut file_exists = false;
+    search_dir(|f| {
+        if f.file_name().to_str().unwrap() == &task.name {
+            file_exists = true
+        }
+    });
+
+    if (!file_exists) || (overwrite) {
+        match file {
+            Ok(t) => match File::create(path) {
+                Ok(_) => return Ok(()),
+                Err(e) => Err(e),
+            },
+            Err(e) => return Err(Error::new(ErrorKind::Other, e)),
+        }
+    } else {
+        Err(Error::new(
+            ErrorKind::AlreadyExists,
+            "File already exists and overwrite is set to false.",
+        ))
     }
 }
