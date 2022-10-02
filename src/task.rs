@@ -17,6 +17,27 @@ pub struct Task {
     pub completed_at: Option<DateTime<Local>>,
 }
 
+impl fmt::Display for Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let completed = if self.completed { "V" } else { "F" };
+        let mut completed_date = String::new();
+
+        if let Some(date) = self.completed_at {
+            completed_date = String::from("Completion: ");
+            completed_date.push_str(&date.format("%d/%m/%Y").to_string());
+        }
+
+        writeln!(
+            f,
+            "{} - {}\n  Creation: {} | {}",
+            self.name,
+            completed,
+            self.created_at.format("%d/%m/%Y").to_string(),
+            completed_date
+        )
+    }
+}
+
 impl Task {
     pub fn new(name: &str) -> Task {
         Task {
