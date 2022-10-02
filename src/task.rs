@@ -10,14 +10,14 @@ use crate::PATH_SAVE;
 
 #[derive(Serialize, Deserialize)]
 pub struct Task {
-    name: String,
-    completed: bool,
-    created_at: DateTime<Local>,
-    completed_at: Option<DateTime<Local>>,
+    pub name: String,
+    pub completed: bool,
+    pub created_at: DateTime<Local>,
+    pub completed_at: Option<DateTime<Local>>,
 }
 
 impl Task {
-    fn new(name: &str) -> Task {
+    pub fn new(name: &str) -> Task {
         Task {
             name: name.to_string(),
             completed: false,
@@ -26,19 +26,19 @@ impl Task {
         }
     }
 
-    fn edit(name: &str) -> Result<Task, Error> {
+    pub fn edit(name: &str) -> Result<Task, Error> {
         todo!()
     }
 
-    fn delete(name: &str) -> Result<(), Error> {
+    pub fn delete(name: &str) -> Result<(), Error> {
         todo!()
     }
 
-    fn toggle(name: &str) -> Result<(), Error> {
+    pub fn toggle(name: &str) -> Result<(), Error> {
         todo!()
     }
 
-    fn find(name: &str) -> Option<Task> {
+    pub fn find(name: &str) -> Option<Task> {
         if let Ok(entries) = fs::read_dir(PATH_SAVE) {
             for entry in entries {
                 if let Ok(entry) = entry {
@@ -57,8 +57,12 @@ impl Task {
         None
     }
 
-    fn list() {
+    pub fn list() -> Vec<String> {
         todo!()
+    }
+
+    pub fn save(&self) -> Result<(), Error> {
+        save_encoded_file(&self)
     }
 }
 

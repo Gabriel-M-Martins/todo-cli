@@ -12,5 +12,5 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct TaskQuery {
-    name: String,
+    pub name: String,
 }
