@@ -19,17 +19,21 @@ pub struct Task {
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let completed = if self.completed { "V" } else { "F" };
+        let completed = if self.completed {
+            "Concluído."
+        } else {
+            "A fazer."
+        };
         let mut completed_date = String::new();
 
         if let Some(date) = self.completed_at {
-            completed_date = String::from("Completion: ");
+            completed_date = String::from("| Completion: ");
             completed_date.push_str(&date.format("%d/%m/%Y").to_string());
         }
 
-        writeln!(
+        write!(
             f,
-            "{} - {}\n  Creation: {} | {}",
+            "{} - {}\n  Creation: {} {}",
             self.name,
             completed,
             self.created_at.format("%d/%m/%Y").to_string(),
@@ -74,18 +78,24 @@ impl Task {
         None
     }
 
-    pub fn list() -> Result<Vec<String>, Error> {
-        let vec: Vec<String> = vec![];
-        if let Ok(entries) = fs::read_dir(PATH_SAVE) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if let Ok(f_type) = entry.file_type() {
-                        if f_type.is_file() {}
-                    }
-                }
+    pub fn list() -> Option<Vec<Task>> {
+        let mut files: Vec<PathBuf> = vec![];
+        let mut tasks: Vec<Task> = vec![];
+        search_dir(|f| {
+            files.push(f.path());
+        });
+
+        for path in files {
+            if let Ok(task) = read_encoded_file(path) {
+                tasks.push(task);
             }
         }
-        todo!()
+
+        if tasks.len() == 0 {
+            return None;
+        } else {
+            return Some(tasks);
+        }
     }
 
     pub fn save(&self, overwrite: bool) -> Result<(), Error> {
@@ -130,9 +140,6 @@ fn save_encoded_file(task: &Task, overwrite: bool) -> Result<(), Error> {
         if f.file_name().to_str().unwrap().contains(&task.name) {
             file_exists = true
         }
-        // if f.file_name().to_str().unwrap() == &task.name {
-        //     file_exists = true
-        // }
     });
 
     if !file_exists || overwrite {

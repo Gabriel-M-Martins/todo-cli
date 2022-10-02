@@ -28,6 +28,18 @@ fn main() {
         Commands::Delete(t) => {}
         Commands::Toggle(t) => {}
         Commands::Find(t) => {}
-        Commands::List => {}
+        Commands::List => {
+            let tasks_opt = Task::list();
+            match tasks_opt {
+                Some(task_vec) => {
+                    for task in task_vec {
+                        println!("{}", task)
+                    }
+                }
+                None => {
+                    println!("No task found.")
+                }
+            }
+        }
     }
 }
