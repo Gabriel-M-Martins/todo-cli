@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::{Error, ErrorKind, Read},
+    path::PathBuf,
 };
 
 use crate::PATH_SAVE;
@@ -38,13 +39,18 @@ impl Task {
     }
 
     fn find(name: &str) -> Option<Task> {
-        let files = fs::read_dir(PATH_SAVE).ok()?;
-
-        for file in files {
-            let file_name = file.ok()?.file_name();
-            if name == file_name.to_str()? {
-                let tsk = read_encoded_file(name).expect("Some error ocurred while reading file.");
-                return Some(tsk);
+        if let Ok(entries) = fs::read_dir(PATH_SAVE) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if let Ok(f_type) = entry.file_type() {
+                        if f_type.is_file() {
+                            match read_encoded_file(entry.path()) {
+                                Ok(tsk) => return Some(tsk),
+                                Err(_) => return None,
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -56,9 +62,9 @@ impl Task {
     }
 }
 
-fn read_encoded_file(name: &str) -> Result<Task, Error> {
-    let path = format!("{}{}.tsk", PATH_SAVE, name);
-    let file = fs::read(&path).expect(format!("Couldn't open file at {}", &path).as_str());
+fn read_encoded_file(path: PathBuf) -> Result<Task, Error> {
+    let file = fs::read(&path)
+        .expect(format!("Couldn't open file at {}", path.to_str().unwrap()).as_str());
 
     let task: Result<Task, Box<bincode::ErrorKind>> = bincode::deserialize(&file);
     match task {
