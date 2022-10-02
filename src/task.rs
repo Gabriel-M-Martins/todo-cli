@@ -2,7 +2,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
-    fs::{self, DirEntry, File},
+    fs::{self, write, DirEntry, File},
     io::{Error, ErrorKind},
     path::PathBuf,
 };
@@ -127,16 +127,19 @@ fn save_encoded_file(task: &Task, overwrite: bool) -> Result<(), Error> {
 
     let mut file_exists = false;
     search_dir(|f| {
-        if f.file_name().to_str().unwrap() == &task.name {
+        if f.file_name().to_str().unwrap().contains(&task.name) {
             file_exists = true
         }
+        // if f.file_name().to_str().unwrap() == &task.name {
+        //     file_exists = true
+        // }
     });
 
-    if (!file_exists) || (overwrite) {
+    if !file_exists || overwrite {
         match file {
-            Ok(t) => match File::create(path) {
+            Ok(t) => match write(path, &t) {
                 Ok(_) => return Ok(()),
-                Err(e) => Err(e),
+                Err(e) => return Err(e),
             },
             Err(e) => return Err(Error::new(ErrorKind::Other, e)),
         }

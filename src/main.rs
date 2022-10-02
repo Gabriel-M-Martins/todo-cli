@@ -17,8 +17,11 @@ fn main() {
         Commands::New(t) => {
             let tsk = Task::new(&t.name);
             match tsk.save(false) {
-                Ok(_) => println!("{} foi salva.", tsk.name),
-                Err(e) => println!("Não foi possível salvar a tarefa.\n{:?}", e),
+                Ok(_) => {
+                    println!("{} foi salva.\n", tsk.name);
+                    println!("{}", tsk)
+                }
+                Err(e) => println!("{}", e.to_string()),
             }
         }
         Commands::Edit(t) => {}
