@@ -7,5 +7,5 @@ use crate::commands::Commands;
 pub struct Args {
     // Comando a ser executado
     #[clap(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
