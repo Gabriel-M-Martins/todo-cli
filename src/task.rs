@@ -80,7 +80,7 @@ impl Task {
     pub fn find(name: &str) -> Option<Task> {
         let mut task: Option<Task> = None;
         search_dir(|entry| {
-            if entry.file_name().to_str().unwrap() == name {
+            if entry.file_name().to_str().unwrap().contains(name) {
                 match read_encoded_file(entry.path()) {
                     Ok(tsk) => task = Some(tsk),
                     Err(_) => {}
@@ -88,7 +88,7 @@ impl Task {
             }
         });
 
-        None
+        task
     }
 
     pub fn list() -> Option<Vec<Task>> {

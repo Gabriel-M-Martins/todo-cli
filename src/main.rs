@@ -28,8 +28,12 @@ fn main() {
         Commands::Delete(t) => {}
         Commands::Toggle(t) => match Task::toggle(&t.name) {
             Ok(task) => {
-                println!("Alternado o status da tarefa {}\n", &task.name);
-                println!("{}", &task)
+                println!("Alternado o status da tarefa {}...", &task.name);
+
+                match task.save(true) {
+                    Ok(_) => println!("Tarefa salva com sucesso:\n\n{}", &task),
+                    Err(e) => display_error(e),
+                }
             }
             Err(e) => display_error(e),
         },
