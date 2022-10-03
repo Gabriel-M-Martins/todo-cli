@@ -40,7 +40,10 @@ fn main() {
             }
             Err(e) => display_error(e),
         },
-        Commands::Find(t) => {}
+        Commands::Find(t) => match Task::find(&t.name) {
+            Some(task) => println!("{}", task),
+            None => println!("Task '{}' not found.", &t.name),
+        },
         Commands::List => {
             let tasks_opt = Task::list();
             match tasks_opt {
