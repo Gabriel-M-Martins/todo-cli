@@ -3,7 +3,6 @@ use clap::{Args, Subcommand};
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     New(TaskQuery),
-    Edit(TaskQuery),
     Delete(TaskQuery),
     Toggle(TaskQuery),
     Find(TaskQuery),
@@ -12,5 +11,5 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct TaskQuery {
-    pub name: String,
+    pub query: String,
 }

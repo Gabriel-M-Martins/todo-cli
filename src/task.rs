@@ -52,10 +52,6 @@ impl Task {
         }
     }
 
-    pub fn edit(name: &str) -> Result<Task, Error> {
-        todo!()
-    }
-
     pub fn delete(name: &str) -> Result<(), Error> {
         let mut result: Result<(), Error> = Err(Error::new(ErrorKind::NotFound, "Task not found."));
 

@@ -14,8 +14,9 @@ fn main() {
     let args = args::Args::parse();
 
     match args.command {
+        // -------------------------------------------------------------------------------------
         Commands::New(t) => {
-            let tsk = Task::new(&t.name);
+            let tsk = Task::new(&t.query);
             match tsk.save(false) {
                 Ok(_) => {
                     println!("'{}' foi salva.\n", tsk.name);
@@ -24,12 +25,13 @@ fn main() {
                 Err(e) => display_error(e),
             }
         }
-        Commands::Edit(t) => {}
-        Commands::Delete(t) => match Task::delete(&t.name) {
-            Ok(_) => println!("Tarefa '{}' excluída com sucesso.", &t.name),
+        // -------------------------------------------------------------------------------------
+        Commands::Delete(t) => match Task::delete(&t.query) {
+            Ok(_) => println!("Tarefa '{}' excluída com sucesso.", &t.query),
             Err(e) => display_error(e),
         },
-        Commands::Toggle(t) => match Task::toggle(&t.name) {
+        // -------------------------------------------------------------------------------------
+        Commands::Toggle(t) => match Task::toggle(&t.query) {
             Ok(task) => {
                 println!("Alternado o status da tarefa '{}'...", &task.name);
 
@@ -40,10 +42,12 @@ fn main() {
             }
             Err(e) => display_error(e),
         },
-        Commands::Find(t) => match Task::find(&t.name) {
+        // -------------------------------------------------------------------------------------
+        Commands::Find(t) => match Task::find(&t.query) {
             Some(task) => println!("{}", task),
-            None => println!("Task '{}' not found.", &t.name),
+            None => println!("Task '{}' not found.", &t.query),
         },
+        // -------------------------------------------------------------------------------------
         Commands::List => {
             let tasks_opt = Task::list();
             match tasks_opt {
