@@ -18,17 +18,20 @@ fn main() {
             let tsk = Task::new(&t.name);
             match tsk.save(false) {
                 Ok(_) => {
-                    println!("{} foi salva.\n", tsk.name);
+                    println!("'{}' foi salva.\n", tsk.name);
                     println!("{}", &tsk)
                 }
                 Err(e) => display_error(e),
             }
         }
         Commands::Edit(t) => {}
-        Commands::Delete(t) => {}
+        Commands::Delete(t) => match Task::delete(&t.name) {
+            Ok(_) => println!("Tarefa '{}' excluída com sucesso.", &t.name),
+            Err(e) => display_error(e),
+        },
         Commands::Toggle(t) => match Task::toggle(&t.name) {
             Ok(task) => {
-                println!("Alternado o status da tarefa {}...", &task.name);
+                println!("Alternado o status da tarefa '{}'...", &task.name);
 
                 match task.save(true) {
                     Ok(_) => println!("Tarefa salva com sucesso:\n\n{}", &task),

@@ -57,7 +57,18 @@ impl Task {
     }
 
     pub fn delete(name: &str) -> Result<(), Error> {
-        todo!()
+        let mut result: Result<(), Error> = Err(Error::new(ErrorKind::NotFound, "Task not found."));
+
+        search_dir(|entry| {
+            if entry.file_name().to_str().unwrap().contains(name) {
+                match fs::remove_file(entry.path()) {
+                    Ok(_) => result = Ok(()),
+                    Err(e) => result = Err(e),
+                }
+            }
+        });
+
+        result
     }
 
     pub fn toggle(name: &str) -> Result<Task, Error> {
@@ -94,8 +105,8 @@ impl Task {
     pub fn list() -> Option<Vec<Task>> {
         let mut files: Vec<PathBuf> = vec![];
         let mut tasks: Vec<Task> = vec![];
-        search_dir(|f| {
-            files.push(f.path());
+        search_dir(|entry| {
+            files.push(entry.path());
         });
 
         for path in files {
