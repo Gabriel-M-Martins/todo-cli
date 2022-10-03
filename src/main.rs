@@ -1,4 +1,4 @@
-use std::{f32::consts::E, io::Error};
+use std::io::Error;
 
 use clap::Parser;
 use commands::Commands;

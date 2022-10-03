@@ -2,7 +2,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
-    fs::{self, write, DirEntry, File},
+    fs::{self, write, DirEntry},
     io::{Error, ErrorKind},
     path::PathBuf,
 };
