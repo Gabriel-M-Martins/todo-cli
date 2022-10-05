@@ -154,17 +154,17 @@ fn read_encoded_file(path: PathBuf) -> Result<Task, Error> {
 }
 
 fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: PathBuf) -> Result<(), Error> {
+    if !&path_save_dir.is_dir() {
+        fs::create_dir(&path_save_dir)?;
+    }
+
     let mut path_to_save = path_save_dir.clone();
     path_to_save.push(&task.name);
     path_to_save.set_extension("tsk");
 
     let file = bincode::serialize(&task);
 
-    if let Err(_) = path_save_dir.try_exists() {
-        fs::create_dir(&path_save_dir)?;
-    }
-
-    //todo: refac this to search only if overwrite is false || use pathbuf::try_exists
+    //todo: refac this to search only if overwrite is false || use path::try_exists
     let mut file_exists = false;
     search_dir(path_save_dir, |entry| {
         if entry.file_name().to_str().unwrap().contains(&task.name) {
