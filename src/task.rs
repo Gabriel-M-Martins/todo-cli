@@ -6,6 +6,7 @@ use std::{
     io::{Error, ErrorKind},
     path::PathBuf,
 };
+use text_align::TextAlign;
 
 #[derive(Serialize, Deserialize)]
 pub struct Task {
@@ -22,21 +23,24 @@ impl fmt::Display for Task {
         } else {
             "A fazer."
         };
-        let mut completed_date = String::new();
 
+        let completed_date: String;
         if let Some(date) = self.completed_at {
-            completed_date = String::from("| Completion: ");
-            completed_date.push_str(&date.format("%d/%m/%Y").to_string());
+            completed_date = format!("Completion: {}", date.format("%d/%m/%Y, %H:%M").to_string())
+        } else {
+            completed_date = String::default();
         }
 
-        write!(
-            f,
-            "{} - {}\n  Creation: {} {}",
-            self.name,
-            completed,
-            self.created_at.format("%d/%m/%Y").to_string(),
+        let name = format!("{}", self.name).left_align(70);
+        let completed = completed.center_align(25);
+        let dates = format!(
+            "Creation: {} | {}",
+            self.created_at.format("%d/%m/%Y, %H:%M").to_string(),
             completed_date
         )
+        .right_align(20);
+
+        write!(f, "{}{}{}", name, completed, dates)
     }
 }
 
