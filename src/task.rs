@@ -172,13 +172,15 @@ fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: PathBuf) -> Re
 
     let file = bincode::serialize(&task);
 
-    //todo: refac this to search only if overwrite is false || use path::try_exists
-    let mut file_exists = false;
-    if let Some(_) = Task::find(&task.name, path_save_dir.clone()) {
-        file_exists = true;
-    }
-
-    if !file_exists || overwrite {
+    if overwrite {
+        match file {
+            Ok(t) => match write(path_to_save, &t) {
+                Ok(_) => return Ok(()),
+                Err(e) => return Err(e),
+            },
+            Err(e) => return Err(Error::new(ErrorKind::Other, e)),
+        }
+    } else if let None = Task::find(&task.name, path_save_dir.clone()) {
         match file {
             Ok(t) => match write(path_to_save, &t) {
                 Ok(_) => return Ok(()),
