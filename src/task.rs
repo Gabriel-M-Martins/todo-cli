@@ -86,13 +86,21 @@ impl Task {
         }
     }
 
-    pub fn find(name: &str, path_save: PathBuf) -> Option<Task> {
+    pub fn find(task_name: &str, path_save: PathBuf) -> Option<Task> {
         let mut task: Option<Task> = None;
         search_dir(path_save, |entry| {
-            if entry.file_name().to_str().unwrap().contains(name) {
-                match read_encoded_file(entry.path()) {
-                    Ok(tsk) => task = Some(tsk),
-                    Err(_) => {}
+            // if entry.file_name().to_str().unwrap().contains(name) {
+            //     match read_encoded_file(entry.path()) {
+            //          Ok(tsk) => task = Some(tsk),
+            //          Err(_) => {}
+            //     }
+            // }
+            if let Some(file_name) = entry.path().file_stem() {
+                if file_name == task_name {
+                    match read_encoded_file(entry.path()) {
+                        Ok(tsk) => task = Some(tsk),
+                        Err(_) => {}
+                    }
                 }
             }
         });
@@ -166,11 +174,9 @@ fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: PathBuf) -> Re
 
     //todo: refac this to search only if overwrite is false || use path::try_exists
     let mut file_exists = false;
-    search_dir(path_save_dir, |entry| {
-        if entry.file_name().to_str().unwrap().contains(&task.name) {
-            file_exists = true
-        }
-    });
+    if let Some(_) = Task::find(&task.name, path_save_dir.clone()) {
+        file_exists = true;
+    }
 
     if !file_exists || overwrite {
         match file {
