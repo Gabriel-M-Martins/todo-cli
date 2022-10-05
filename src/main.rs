@@ -90,6 +90,7 @@ fn default_path_save_dir() -> Result<PathBuf, std::io::Error> {
     }
 }
 
+//todo: return a env_config struct
 fn load_env() -> PathBuf {
     dotenv::dotenv().ok();
     match dotenv::dotenv() {
