@@ -7,8 +7,6 @@ use std::{
     path::PathBuf,
 };
 
-use crate::PATH_SAVE;
-
 #[derive(Serialize, Deserialize)]
 pub struct Task {
     pub name: String,
@@ -52,10 +50,10 @@ impl Task {
         }
     }
 
-    pub fn delete(name: &str) -> Result<(), Error> {
+    pub fn delete(name: &str, path_save: PathBuf) -> Result<(), Error> {
         let mut result: Result<(), Error> = Err(Error::new(ErrorKind::NotFound, "Task not found."));
 
-        search_dir(|entry| {
+        search_dir(path_save, |entry| {
             if entry.file_name().to_str().unwrap().contains(name) {
                 match fs::remove_file(entry.path()) {
                     Ok(_) => result = Ok(()),
@@ -67,8 +65,8 @@ impl Task {
         result
     }
 
-    pub fn toggle(name: &str) -> Result<Task, Error> {
-        match Task::find(name) {
+    pub fn toggle(name: &str, path_save: PathBuf) -> Result<Task, Error> {
+        match Task::find(name, path_save) {
             Some(mut task) => {
                 if !task.completed {
                     task.completed = true;
@@ -84,9 +82,9 @@ impl Task {
         }
     }
 
-    pub fn find(name: &str) -> Option<Task> {
+    pub fn find(name: &str, path_save: PathBuf) -> Option<Task> {
         let mut task: Option<Task> = None;
-        search_dir(|entry| {
+        search_dir(path_save, |entry| {
             if entry.file_name().to_str().unwrap().contains(name) {
                 match read_encoded_file(entry.path()) {
                     Ok(tsk) => task = Some(tsk),
@@ -98,10 +96,10 @@ impl Task {
         task
     }
 
-    pub fn list() -> Option<Vec<Task>> {
+    pub fn list(path_save: PathBuf) -> Option<Vec<Task>> {
         let mut files: Vec<PathBuf> = vec![];
         let mut tasks: Vec<Task> = vec![];
-        search_dir(|entry| {
+        search_dir(path_save, |entry| {
             files.push(entry.path());
         });
 
@@ -118,16 +116,16 @@ impl Task {
         }
     }
 
-    pub fn save(&self, overwrite: bool) -> Result<(), Error> {
-        save_encoded_file(&self, overwrite)
+    pub fn save(&self, overwrite: bool, path_save: PathBuf) -> Result<(), Error> {
+        save_encoded_file(&self, overwrite, path_save)
     }
 }
 
-fn search_dir<F>(mut f: F)
+fn search_dir<F>(path_save: PathBuf, mut f: F)
 where
     F: FnMut(DirEntry),
 {
-    if let Ok(entries) = fs::read_dir(PATH_SAVE) {
+    if let Ok(entries) = fs::read_dir(path_save) {
         for entry in entries {
             if let Ok(entry) = entry {
                 if let Ok(f_type) = entry.file_type() {
@@ -151,20 +149,28 @@ fn read_encoded_file(path: PathBuf) -> Result<Task, Error> {
     }
 }
 
-fn save_encoded_file(task: &Task, overwrite: bool) -> Result<(), Error> {
-    let path = format!("{}{}.tsk", PATH_SAVE, task.name);
+fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: PathBuf) -> Result<(), Error> {
+    let mut path_to_save = path_save_dir.clone();
+    path_to_save.push(&task.name);
+    path_to_save.set_extension("tsk");
+
     let file = bincode::serialize(&task);
 
+    if let Err(_) = path_save_dir.try_exists() {
+        fs::create_dir(&path_save_dir)?;
+    }
+
+    //todo: refac this to search only if overwrite is false || use pathbuf::try_exists
     let mut file_exists = false;
-    search_dir(|f| {
-        if f.file_name().to_str().unwrap().contains(&task.name) {
+    search_dir(path_save_dir, |entry| {
+        if entry.file_name().to_str().unwrap().contains(&task.name) {
             file_exists = true
         }
     });
 
     if !file_exists || overwrite {
         match file {
-            Ok(t) => match write(path, &t) {
+            Ok(t) => match write(path_to_save, &t) {
                 Ok(_) => return Ok(()),
                 Err(e) => return Err(e),
             },
