@@ -1,15 +1,21 @@
-use clap::{Args, Subcommand};
+use crate::args::*;
+use clap::Subcommand;
+
+use clap::Parser;
+
+#[derive(Debug, Parser)]
+#[clap(author, version, about)]
+pub struct CLI {
+    // Comando a ser executado
+    #[clap(subcommand)]
+    pub command: Option<Commands>,
+}
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    New(TaskQuery),
-    Delete(TaskQuery),
-    Toggle(TaskQuery),
-    Find(TaskQuery),
-    List,
-}
-
-#[derive(Debug, Args)]
-pub struct TaskQuery {
-    pub query: String,
+    New(CommandNewQuery),
+    Delete(CommandDeleteQuery),
+    Toggle(CommandToggleQuery),
+    Find(CommandFindQuery),
+    List(CommandListQuery),
 }

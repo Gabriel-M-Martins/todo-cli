@@ -14,15 +14,15 @@ mod task;
 fn main() {
     let path_save_dir = load_env();
 
-    let args = args::Args::parse();
+    let cli = commands::CLI::parse();
 
-    match args.command {
+    match cli.command {
         // -------------------------------------------------------------------------------------
         Some(command) => match command {
             // -------------------------------------------------------------------------------------
             Commands::New(t) => {
-                let tsk = Task::new(&t.query);
-                match tsk.save(false, path_save_dir) {
+                let tsk = Task::new(&t.task_name);
+                match tsk.save(t.overwrite, path_save_dir) {
                     Ok(_) => {
                         println!("'{}' foi salva.\n", tsk.name);
                         println!("{}", &tsk)
@@ -31,12 +31,12 @@ fn main() {
                 }
             }
             // -------------------------------------------------------------------------------------
-            Commands::Delete(t) => match Task::delete(&t.query, path_save_dir) {
-                Ok(_) => println!("Tarefa '{}' excluída com sucesso.", &t.query),
+            Commands::Delete(t) => match Task::delete(&t.task_name, path_save_dir) {
+                Ok(_) => println!("Tarefa '{}' excluída com sucesso.", &t.task_name),
                 Err(e) => display_error(e),
             },
             // -------------------------------------------------------------------------------------
-            Commands::Toggle(t) => match Task::toggle(&t.query, path_save_dir.clone()) {
+            Commands::Toggle(t) => match Task::toggle(&t.task_name, path_save_dir.clone()) {
                 Ok(task) => {
                     println!("Alternado o status da tarefa '{}'...", &task.name);
 
@@ -48,12 +48,12 @@ fn main() {
                 Err(e) => display_error(e),
             },
             // -------------------------------------------------------------------------------------
-            Commands::Find(t) => match Task::find(&t.query, path_save_dir) {
+            Commands::Find(t) => match Task::find(&t.task_name, path_save_dir) {
                 Some(task) => println!("{}", task),
-                None => println!("Task '{}' not found.", &t.query),
+                None => println!("Task '{}' not found.", &t.task_name),
             },
             // -------------------------------------------------------------------------------------
-            Commands::List => list_tasks(path_save_dir),
+            Commands::List(_) => list_tasks(path_save_dir),
         },
         // -------------------------------------------------------------------------------------
         None => list_tasks(path_save_dir),
