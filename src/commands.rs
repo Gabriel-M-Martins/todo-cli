@@ -6,7 +6,6 @@ pub enum Commands {
     Delete(TaskQuery),
     Toggle(TaskQuery),
     Find(TaskQuery),
-    List,
 }
 
 #[derive(Debug, Args)]

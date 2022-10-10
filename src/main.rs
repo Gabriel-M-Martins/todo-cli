@@ -52,8 +52,6 @@ fn main() {
                 Some(task) => println!("{}", task),
                 None => println!("Task '{}' not found.", &t.query),
             },
-            // -------------------------------------------------------------------------------------
-            Commands::List => list_tasks(path_save_dir),
         },
         // -------------------------------------------------------------------------------------
         None => list_tasks(path_save_dir),
