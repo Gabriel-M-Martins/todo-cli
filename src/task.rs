@@ -55,12 +55,12 @@ impl Task {
     }
 
     pub fn delete(name: &str, path_save: PathBuf, all: bool) -> Result<(), Error> {
-        let mut result: Result<(), Error> = Err(Error::new(ErrorKind::NotFound, "Task not found."));
+        let mut result: Result<(), Error> = Ok(());
 
-        search_dir(path_save, |entry| {
+        search_dir(&path_save, |entry| {
             if all {
                 if let Err(e) = fs::remove_file(entry.path()) {
-                    result = Err(e);
+                    result = Err(e)
                 }
             } else if let Some(file_name) = entry.path().file_stem() {
                 if file_name == name {
@@ -68,6 +68,8 @@ impl Task {
                         Ok(_) => result = Ok(()),
                         Err(e) => result = Err(e),
                     }
+                } else {
+                    result = Err(Error::new(ErrorKind::NotFound, "Task not found."));
                 }
             }
         });
@@ -75,24 +77,53 @@ impl Task {
         result
     }
 
-    pub fn toggle(name: &str, path_save: PathBuf) -> Result<Task, Error> {
+    pub fn toggle(name: &str, path_save: &PathBuf, all: bool) -> Result<Option<Task>, Error> {
+        let mut error: Option<Error> = None;
+        if all {
+            match Task::list(&path_save) {
+                Some(mut tasks) => {
+                    tasks.iter_mut().for_each(|f| {
+                        f.completed = !f.completed;
+
+                        f.completed_at = if f.completed {
+                            Some(Local::now())
+                        } else {
+                            None
+                        };
+
+                        if let Err(e) = f.save(true, path_save) {
+                            error = Some(e);
+                        }
+                    });
+                    return Ok(None);
+                }
+                None => {
+                    return Ok(None);
+                }
+            }
+        }
+
+        if let Some(e) = error {
+            return Err(e);
+        }
+
         match Task::find(name, path_save) {
             Some(mut task) => {
-                if !task.completed {
-                    task.completed = true;
-                    task.completed_at = Some(Local::now())
+                task.completed = !task.completed;
+                task.completed_at = if task.completed {
+                    Some(Local::now())
                 } else {
-                    task.completed = false;
-                }
+                    None
+                };
 
-                return Ok(task);
+                return Ok(Some(task));
             }
 
             None => return Err(Error::new(ErrorKind::NotFound, "Task not found.")),
         }
     }
 
-    pub fn find(task_name: &str, path_save: PathBuf) -> Option<Task> {
+    pub fn find(task_name: &str, path_save: &PathBuf) -> Option<Task> {
         let mut task: Option<Task> = None;
         search_dir(path_save, |entry| {
             if let Some(file_name) = entry.path().file_stem() {
@@ -108,7 +139,7 @@ impl Task {
         task
     }
 
-    pub fn list(path_save: PathBuf) -> Option<Vec<Task>> {
+    pub fn list(path_save: &PathBuf) -> Option<Vec<Task>> {
         let mut files: Vec<PathBuf> = vec![];
         let mut tasks: Vec<Task> = vec![];
         search_dir(path_save, |entry| {
@@ -128,12 +159,12 @@ impl Task {
         }
     }
 
-    pub fn save(&self, overwrite: bool, path_save: PathBuf) -> Result<(), Error> {
+    pub fn save(&self, overwrite: bool, path_save: &PathBuf) -> Result<(), Error> {
         save_encoded_file(&self, overwrite, path_save)
     }
 }
 
-fn search_dir<F>(path_save: PathBuf, mut f: F)
+fn search_dir<F>(path_save: &PathBuf, mut f: F)
 where
     F: FnMut(DirEntry),
 {
@@ -161,7 +192,7 @@ fn read_encoded_file(path: PathBuf) -> Result<Task, Error> {
     }
 }
 
-fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: PathBuf) -> Result<(), Error> {
+fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: &PathBuf) -> Result<(), Error> {
     if !&path_save_dir.is_dir() {
         fs::create_dir(&path_save_dir)?;
     }
@@ -180,7 +211,7 @@ fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: PathBuf) -> Re
             },
             Err(e) => return Err(Error::new(ErrorKind::Other, e)),
         }
-    } else if let None = Task::find(&task.name, path_save_dir.clone()) {
+    } else if let None = Task::find(&task.name, &path_save_dir) {
         match file {
             Ok(t) => match write(path_to_save, &t) {
                 Ok(_) => return Ok(()),
