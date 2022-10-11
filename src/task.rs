@@ -54,14 +54,20 @@ impl Task {
         }
     }
 
-    pub fn delete(name: &str, path_save: PathBuf) -> Result<(), Error> {
+    pub fn delete(name: &str, path_save: PathBuf, all: bool) -> Result<(), Error> {
         let mut result: Result<(), Error> = Err(Error::new(ErrorKind::NotFound, "Task not found."));
 
         search_dir(path_save, |entry| {
-            if entry.file_name().to_str().unwrap().contains(name) {
-                match fs::remove_file(entry.path()) {
-                    Ok(_) => result = Ok(()),
-                    Err(e) => result = Err(e),
+            if all {
+                if let Err(e) = fs::remove_file(entry.path()) {
+                    result = Err(e);
+                }
+            } else if let Some(file_name) = entry.path().file_stem() {
+                if file_name == name {
+                    match fs::remove_file(entry.path()) {
+                        Ok(_) => result = Ok(()),
+                        Err(e) => result = Err(e),
+                    }
                 }
             }
         });
@@ -89,12 +95,6 @@ impl Task {
     pub fn find(task_name: &str, path_save: PathBuf) -> Option<Task> {
         let mut task: Option<Task> = None;
         search_dir(path_save, |entry| {
-            // if entry.file_name().to_str().unwrap().contains(name) {
-            //     match read_encoded_file(entry.path()) {
-            //          Ok(tsk) => task = Some(tsk),
-            //          Err(_) => {}
-            //     }
-            // }
             if let Some(file_name) = entry.path().file_stem() {
                 if file_name == task_name {
                     match read_encoded_file(entry.path()) {
