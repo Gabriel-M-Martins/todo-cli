@@ -54,25 +54,27 @@ impl Task {
         }
     }
 
-    pub fn delete(name: &str, path_save: PathBuf, all: bool) -> Result<(), Error> {
-        let mut result: Result<(), Error> = Ok(());
+    pub fn delete(name: &str, path_save_dir: PathBuf, all: bool) -> Result<(), Error> {
+        let mut result = Ok(());
 
-        search_dir(&path_save, |entry| {
-            if all {
+        if all {
+            search_dir(&path_save_dir, |entry| {
                 if let Err(e) = fs::remove_file(entry.path()) {
                     result = Err(e)
                 }
-            } else if let Some(file_name) = entry.path().file_stem() {
-                if file_name == name {
-                    match fs::remove_file(entry.path()) {
-                        Ok(_) => result = Ok(()),
-                        Err(e) => result = Err(e),
+            })
+        } else {
+            search_dir(&path_save_dir, |entry| {
+                if let Some(entry_file_name) = entry.path().file_stem() {
+                    if name == entry_file_name {
+                        match fs::remove_file(entry.path()) {
+                            Ok(_) => {}
+                            Err(e) => result = Err(e),
+                        }
                     }
-                } else {
-                    result = Err(Error::new(ErrorKind::NotFound, "Task not found."));
                 }
-            }
-        });
+            })
+        }
 
         result
     }
@@ -164,11 +166,11 @@ impl Task {
     }
 }
 
-fn search_dir<F>(path_save: &PathBuf, mut f: F)
+fn search_dir<F>(path_save_dir: &PathBuf, mut f: F)
 where
     F: FnMut(DirEntry),
 {
-    if let Ok(entries) = fs::read_dir(path_save) {
+    if let Ok(entries) = fs::read_dir(path_save_dir) {
         for entry in entries {
             if let Ok(entry) = entry {
                 if let Ok(f_type) = entry.file_type() {
