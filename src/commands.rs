@@ -36,8 +36,8 @@ pub enum Commands {
         task_name: String,
     },
 
-    #[command(arg_required_else_help = true)]
     List {
+        #[clap(conflicts_with("only_completed"))]
         #[arg(short = 't')]
         only_todo: bool,
         #[arg(short = 'c')]

@@ -82,7 +82,7 @@ impl Task {
     pub fn toggle(name: &str, path_save: &PathBuf, all: bool) -> Result<Option<Task>, Error> {
         let mut error: Option<Error> = None;
         if all {
-            match Task::list(&path_save) {
+            match Task::list(&path_save, false, false) {
                 Some(mut tasks) => {
                     tasks.iter_mut().for_each(|f| {
                         f.completed = !f.completed;
@@ -141,9 +141,10 @@ impl Task {
         task
     }
 
-    pub fn list(path_save: &PathBuf) -> Option<Vec<Task>> {
+    pub fn list(path_save: &PathBuf, only_completed: bool, only_todo: bool) -> Option<Vec<Task>> {
         let mut files: Vec<PathBuf> = vec![];
         let mut tasks: Vec<Task> = vec![];
+
         search_dir(path_save, |entry| {
             files.push(entry.path());
         });
@@ -157,6 +158,11 @@ impl Task {
         if tasks.len() == 0 {
             return None;
         } else {
+            if only_completed {
+                tasks.retain(|task| task.completed == true);
+            } else if only_todo {
+                tasks.retain(|task| task.completed == false)
+            }
             return Some(tasks);
         }
     }
