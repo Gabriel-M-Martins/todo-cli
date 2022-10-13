@@ -109,36 +109,44 @@ impl Task {
             return Err(e);
         }
 
-        match Task::find(name, path_save) {
-            Some(mut task) => {
-                task.completed = !task.completed;
-                task.completed_at = if task.completed {
-                    Some(Local::now())
-                } else {
-                    None
-                };
+        todo!()
 
-                return Ok(Some(task));
-            }
+        //todo: refac this to work with Option<Vec<Task>> from Task::find
+        // match Task::find(name, path_save) {
+        //     Some(mut task) => {
+        //         task.completed = !task.completed;
+        //         task.completed_at = if task.completed {
+        //             Some(Local::now())
+        //         } else {
+        //             None
+        //         };
 
-            None => return Err(Error::new(ErrorKind::NotFound, "Task not found.")),
-        }
+        //         return Ok(Some(task));
+        //     }
+
+        //     None => return Err(Error::new(ErrorKind::NotFound, "Task not found.")),
+        // }
     }
 
-    pub fn find(task_name: &str, path_save: &PathBuf) -> Option<Task> {
-        let mut task: Option<Task> = None;
+    pub fn find(task_name: &str, path_save: &PathBuf) -> Option<Vec<Task>> {
+        let mut tasks: Vec<Task> = vec![];
+
         search_dir(path_save, |entry| {
             if let Some(file_name) = entry.path().file_stem() {
-                if file_name == task_name {
+                if file_name.to_str().unwrap().contains(task_name) {
                     match read_encoded_file(entry.path()) {
-                        Ok(tsk) => task = Some(tsk),
+                        Ok(task) => tasks.push(task),
                         Err(_) => {}
                     }
                 }
             }
         });
 
-        task
+        if tasks.len() > 0 {
+            Some(tasks)
+        } else {
+            None
+        }
     }
 
     pub fn list(path_save: &PathBuf, only_completed: bool, only_todo: bool) -> Option<Vec<Task>> {

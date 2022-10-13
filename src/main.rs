@@ -56,7 +56,9 @@ fn main() {
             },
             // -------------------------------------------------------------------------------------
             Commands::Find {task_name} => match Task::find(&task_name, &path_save_dir) {
-                Some(task) => println!("{}", task),
+                Some(tasks) => for task in tasks {
+                    println!("{}", task)
+                },
                 None => println!("Task '{}' not found.", task_name),
             },
             // -------------------------------------------------------------------------------------
