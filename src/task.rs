@@ -8,7 +8,7 @@ use std::{
 };
 use text_align::TextAlign;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
     pub name: String,
     pub completed: bool,
@@ -79,10 +79,10 @@ impl Task {
         result
     }
 
-    pub fn toggle(name: &str, path_save: &PathBuf, all: bool) -> Result<Option<Task>, Error> {
+    pub fn toggle(name: &str, path_save_dir: &PathBuf, all: bool) -> Result<Option<Task>, Error> {
         let mut error: Option<Error> = None;
         if all {
-            match Task::list(&path_save, false, false) {
+            match Task::list(&path_save_dir, false, false) {
                 Some(mut tasks) => {
                     tasks.iter_mut().for_each(|f| {
                         f.completed = !f.completed;
@@ -93,7 +93,7 @@ impl Task {
                             None
                         };
 
-                        if let Err(e) = f.save(true, path_save) {
+                        if let Err(e) = f.save(true, path_save_dir) {
                             error = Some(e);
                         }
                     });
@@ -109,23 +109,52 @@ impl Task {
             return Err(e);
         }
 
-        todo!()
+        match Task::find(name, path_save_dir) {
+            Some(mut task_vec) => match task_vec.len() {
+                0 => return Err(Error::new(ErrorKind::NotFound, "Task not found.")),
 
-        //todo: refac this to work with Option<Vec<Task>> from Task::find
-        // match Task::find(name, path_save) {
-        //     Some(mut task) => {
-        //         task.completed = !task.completed;
-        //         task.completed_at = if task.completed {
-        //             Some(Local::now())
-        //         } else {
-        //             None
-        //         };
+                1 => {
+                    task_vec[0].completed = !task_vec[0].completed;
+                    return Ok(Some(task_vec[0].clone()));
+                }
 
-        //         return Ok(Some(task));
-        //     }
+                _ => {
+                    println!("Found more than one task. Which one should be toggled?");
+                    let iter = task_vec.clone().into_iter();
+                    for (index, task) in iter.enumerate() {
+                        println!("{}. {}", index, task);
+                    }
 
-        //     None => return Err(Error::new(ErrorKind::NotFound, "Task not found.")),
-        // }
+                    let mut input = String::new();
+                    match std::io::stdin().read_line(&mut input) {
+                        Ok(_) => {
+                            let index = input.trim().parse::<usize>();
+                            match index {
+                                Ok(index) => {
+                                    if index <= task_vec.len() - 1 {
+                                        task_vec[index].completed = !task_vec[index].completed;
+                                        return Ok(Some(task_vec[index].clone()));
+                                    } else {
+                                        return Err(Error::new(
+                                            ErrorKind::InvalidInput,
+                                            "Index input outside valid range.",
+                                        ));
+                                    }
+                                }
+                                Err(e) => return Err(Error::new(ErrorKind::InvalidInput, e)),
+                            }
+                        }
+                        Err(e) => return Err(e),
+                    }
+                }
+            },
+            None => {
+                return Err(Error::new(
+                    ErrorKind::NotFound,
+                    format!("No task found that contains '{}'", name),
+                ));
+            }
+        }
     }
 
     pub fn find(task_name: &str, path_save: &PathBuf) -> Option<Vec<Task>> {
@@ -217,28 +246,37 @@ fn save_encoded_file(task: &Task, overwrite: bool, path_save_dir: &PathBuf) -> R
     path_to_save.push(&task.name);
     path_to_save.set_extension("tsk");
 
-    let file = bincode::serialize(&task);
+    let file: Vec<u8>;
+    match bincode::serialize(&task) {
+        Err(e) => return Err(Error::new(ErrorKind::Other, e)),
+        Ok(f) => file = f,
+    }
 
     if overwrite {
-        match file {
-            Ok(t) => match write(path_to_save, &t) {
-                Ok(_) => return Ok(()),
-                Err(e) => return Err(e),
-            },
-            Err(e) => return Err(Error::new(ErrorKind::Other, e)),
+        match write(path_to_save, file) {
+            Ok(_) => return Ok(()),
+            Err(e) => return Err(e),
         }
-    } else if let None = Task::find(&task.name, &path_save_dir) {
-        match file {
-            Ok(t) => match write(path_to_save, &t) {
-                Ok(_) => return Ok(()),
-                Err(e) => return Err(e),
-            },
-            Err(e) => return Err(Error::new(ErrorKind::Other, e)),
+    }
+
+    match Task::find(&task.name, &path_save_dir) {
+        None => match write(path_to_save, file) {
+            Ok(_) => return Ok(()),
+            Err(e) => return Err(e),
+        },
+
+        Some(task_vec) => {
+            if task_vec.iter().any(|i| &i.name == &task.name) {
+                return Err(Error::new(
+                    ErrorKind::AlreadyExists,
+                    "File already exists and overwrite is set to false.",
+                ));
+            } else {
+                match write(path_to_save, file) {
+                    Ok(_) => return Ok(()),
+                    Err(e) => return Err(e),
+                }
+            }
         }
-    } else {
-        Err(Error::new(
-            ErrorKind::AlreadyExists,
-            "File already exists and overwrite is set to false.",
-        ))
     }
 }
