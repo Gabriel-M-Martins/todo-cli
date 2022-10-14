@@ -7,22 +7,21 @@ use clap::Parser;
 use commands::Commands;
 use task::Task;
 
-mod args;
 mod commands;
 mod task;
 
 fn main() {
     let path_save_dir = load_env();
 
-    let args = args::Args::parse();
+    let cli = commands::CLI::parse();
 
-    match args.command {
+    match cli.command {
         // -------------------------------------------------------------------------------------
         Some(command) => match command {
             // -------------------------------------------------------------------------------------
-            Commands::New(t) => {
-                let tsk = Task::new(&t.query);
-                match tsk.save(false, path_save_dir) {
+            Commands::New {task_name, overwrite} => {
+                let tsk = Task::new(&task_name);
+                match tsk.save(overwrite, &path_save_dir) {
                     Ok(_) => {
                         println!("'{}' foi salva.\n", tsk.name);
                         println!("{}", &tsk)
@@ -31,30 +30,44 @@ fn main() {
                 }
             }
             // -------------------------------------------------------------------------------------
-            Commands::Delete(t) => match Task::delete(&t.query, path_save_dir) {
-                Ok(_) => println!("Tarefa '{}' excluída com sucesso.", &t.query),
+            Commands::Delete {task_name, all} => match Task::delete(&task_name, path_save_dir, all) {
+                Ok(_) => if all {
+                    println!("Todas as tarefas excluídas com sucesso.")
+                } else {
+                    println!("Tarefa '{}' excluída com sucesso.", &task_name)
+                }
+                ,
                 Err(e) => display_error(e),
             },
             // -------------------------------------------------------------------------------------
-            Commands::Toggle(t) => match Task::toggle(&t.query, path_save_dir.clone()) {
+            Commands::Toggle {task_name, all} => match Task::toggle(&task_name, &path_save_dir, all) {
                 Ok(task) => {
-                    println!("Alternado o status da tarefa '{}'...", &task.name);
-
-                    match task.save(true, path_save_dir) {
-                        Ok(_) => println!("Tarefa salva com sucesso:\n\n{}", &task),
-                        Err(e) => display_error(e),
+                    if let Some(task) = task{
+                        match task.save(true, &path_save_dir) {
+                            Ok(_) => println!("Tarefa salva com sucesso:\n\n{}", &task),
+                            Err(e) => display_error(e),
+                        }
+                    } else {
+                        println!("Todas as tarefas tiveram seu status alternado!");
+                        list_tasks(&path_save_dir, false, false)
                     }
                 }
                 Err(e) => display_error(e),
             },
             // -------------------------------------------------------------------------------------
-            Commands::Find(t) => match Task::find(&t.query, path_save_dir) {
-                Some(task) => println!("{}", task),
-                None => println!("Task '{}' not found.", &t.query),
+            Commands::Find {task_name} => match Task::find(&task_name, &path_save_dir) {
+                Some(tasks) => for task in tasks {
+                    println!("{}", task)
+                },
+                None => println!("Task '{}' not found.", task_name),
             },
+            // -------------------------------------------------------------------------------------
+            Commands::List { only_todo, only_completed } => {
+                list_tasks(&path_save_dir, only_todo, only_completed)
+            }
         },
         // -------------------------------------------------------------------------------------
-        None => list_tasks(path_save_dir),
+        None => list_tasks(&path_save_dir, false, false),
     }
 }
 
@@ -62,8 +75,9 @@ fn display_error(e: Error) {
     println!("{}", e.to_string())
 }
 
-fn list_tasks(path_save: PathBuf) {
-    let tasks_opt = Task::list(path_save);
+//todo: refac this
+fn list_tasks(path_save_dir: &PathBuf, only_todo:bool, only_completed: bool) {
+    let tasks_opt = Task::list(path_save_dir, only_completed, only_todo);
     match tasks_opt {
         Some(task_vec) => {
             for task in task_vec {
